@@ -19,7 +19,7 @@ from app.services.chat_memory_service import (
     get_chat_memory,
     hydrate_chat_memory,
 )
-from app.services.llm_service import ensure_llm_configured, generate_assistant_reply, stream_assistant_reply
+from app.services.llm_service import generate_assistant_reply, stream_assistant_reply
 
 
 def list_user_chat_sessions(db: Session, user: User) -> list[ChatSession]:
@@ -131,7 +131,10 @@ async def create_chat_exchange(
     payload: ChatMessageCreateRequest,
     model: str | None = None,
 ) -> ChatExchangeResponse:
-    ensure_llm_configured()
+    # Validate model and API key before touching the DB
+    from app.services.llm_service import _resolve_and_validate
+    _resolve_and_validate(model)
+
     session = get_user_chat_session(db, user, session_id)
     existing_history = _list_session_messages(db, session.id)
     await hydrate_chat_memory(session.id, existing_history)
@@ -156,7 +159,9 @@ async def create_chat_exchange(
     try:
         llm_response = await generate_assistant_reply(history, model=model)
     except HTTPException as exc:
-        _save_failed_assistant_message(db, session, exc.detail)
+        # Only save a failed message for actual LLM errors (502), not config errors (400/503)
+        if exc.status_code == status.HTTP_502_BAD_GATEWAY:
+            _save_failed_assistant_message(db, session, exc.detail)
         raise
 
     assistant_message = ChatMessage(
@@ -221,7 +226,15 @@ async def stream_chat_exchange(
     On error:
         data: {"type":"error","detail":"..."}
     """
-    ensure_llm_configured()
+    # Validate model and API key before touching the DB
+    from app.services.llm_service import _resolve_and_validate
+    try:
+        _resolve_and_validate(model)
+    except Exception as exc:
+        detail = exc.detail if hasattr(exc, "detail") else "Configuration error"
+        yield f"data: {json.dumps({'type': 'error', 'detail': str(detail)})}\n\n"
+        return
+
     session = get_user_chat_session(db, user, session_id)
     existing_history = _list_session_messages(db, session.id)
     await hydrate_chat_memory(session.id, existing_history)
