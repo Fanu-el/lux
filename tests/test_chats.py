@@ -110,7 +110,7 @@ class TestChatMessages:
         from app.services.llm_service import LLMResponse
         mock_response = LLMResponse(
             content="Hello from Gemini!",
-            model="gemini-2.5-flash",
+            model="gemini/gemini-2.5-flash",
             latency_ms=123,
             input_tokens=10,
             output_tokens=5,
@@ -138,7 +138,7 @@ class TestChatMessages:
         data = resp.json()["data"]
         assert data["user_message"]["content"] == "Hello!"
         assert data["assistant_message"]["content"] == "Hello from Gemini!"
-        assert data["assistant_message"]["model"] == "gemini-2.5-flash"
+        assert data["assistant_message"]["model"] == "gemini/gemini-2.5-flash"
         assert data["assistant_message"]["latency_ms"] == 123
 
     def test_send_message_auto_titles_session(self, client, db):
@@ -175,7 +175,7 @@ class TestChatMessages:
 
     def test_invalid_gemini_model_rejected(self, client, db):
         user = make_user(db, email="cm4@example.com")
-        headers = {**auth_headers(user), "X-Gemini-Model": "gpt-4o"}
+        headers = {**auth_headers(user), "X-LLM-Model": "openai/gpt-99-fake"}
         session = create_session(client, headers)
         resp = client.post(
             f"/chats/{session['id']}/messages",

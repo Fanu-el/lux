@@ -95,7 +95,7 @@ def list_messages(
 async def create_message(
     session_id: str,
     payload: ChatMessageCreateRequest,
-    gemini_model: str | None = Header(default=None, alias="X-Gemini-Model"),
+    llm_model: str | None = Header(default=None, alias="X-LLM-Model"),
     current_user: User = Depends(requires_auth),
     db: Session = Depends(get_db),
 ):
@@ -105,7 +105,7 @@ async def create_message(
             current_user,
             session_id,
             payload,
-            model=gemini_model,
+            model=llm_model,
         )
     )
 
@@ -117,7 +117,7 @@ async def create_message(
 async def stream_message(
     session_id: str,
     payload: ChatMessageCreateRequest,
-    gemini_model: str | None = Header(default=None, alias="X-Gemini-Model"),
+    llm_model: str | None = Header(default=None, alias="X-LLM-Model"),
     current_user: User = Depends(requires_auth),
     db: Session = Depends(get_db),
 ):
@@ -130,7 +130,7 @@ async def stream_message(
     - `{"type":"error","detail":"..."}` — on failure
     """
     return StreamingResponse(
-        stream_chat_exchange(db, current_user, session_id, payload, model=gemini_model),
+        stream_chat_exchange(db, current_user, session_id, payload, model=llm_model),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
