@@ -61,6 +61,26 @@ class Settings:
         os.getenv("VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS", "60")
     )
     verification_code_length: int = int(os.getenv("VERIFICATION_CODE_LENGTH", "6"))
+    google_api_key: str | None = os.getenv("GOOGLE_API_KEY")
+    default_gemini_model: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
+    gemini_allowed_models: list[str] = [
+        model.strip()
+        for model in os.getenv(
+            "GEMINI_ALLOWED_MODELS",
+            "gemini-2.5-flash,gemini-2.5-pro",
+        ).split(",")
+        if model.strip()
+    ]
+    gemini_temperature: float = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
+    chat_context_message_limit: int = int(os.getenv("CHAT_CONTEXT_MESSAGE_LIMIT", "20"))
+    chat_system_prompt: str = os.getenv(
+        "CHAT_SYSTEM_PROMPT",
+        "You are Lux, a helpful and concise AI assistant.",
+    )
+    redis_url: str | None = os.getenv("REDIS_URL")
+    chat_memory_ttl_seconds: int = int(
+        os.getenv("CHAT_MEMORY_TTL_SECONDS", str(60 * 60 * 24))
+    )
 
 
 @lru_cache

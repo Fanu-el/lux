@@ -38,3 +38,4 @@ class User(UUIDPrimaryKeyMixin, AuditMixin, Base):
 
     role = relationship("Role", back_populates="users")
     verification_codes = relationship("VerificationCode", back_populates="user")
+    chat_sessions = relationship("ChatSession", back_populates="user")
