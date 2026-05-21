@@ -58,13 +58,6 @@ class LLMStreamChunk:
 # Public API
 # ---------------------------------------------------------------------------
 
-def ensure_llm_configured(model_str: str | None = None) -> None:
-    """Raise 503 if the API key for the resolved provider is missing."""
-    resolved = _resolve_model_str(model_str)
-    provider, _ = _parse_model_str(resolved)
-    _check_api_key(provider)
-
-
 async def generate_assistant_reply(
     history: list[ChatContextMessage],
     model: str | None = None,
