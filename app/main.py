@@ -13,7 +13,7 @@ from app.core.exception_handlers import (
 )
 from app.db.session import SessionLocal, engine
 from app.models import Base
-from app.routes import admin, auth, users
+from app.routes import admin, auth, chats, users
 from app.schemas.response import ApiResponse, success_response
 from app.services.role_service import seed_default_roles, seed_default_super_admin
 
@@ -37,6 +37,7 @@ app.add_exception_handler(Exception, unexpected_error_handler)
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(chats.router)
 app.include_router(users.router)
 
 

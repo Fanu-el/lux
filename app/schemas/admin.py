@@ -33,3 +33,10 @@ class VerificationCodePublic(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+
+
+class AnalyticsResponse(BaseModel):
+    total_chat_sessions: int
+    total_messages: int
+    active_users: int
+    failed_ai_calls: int
