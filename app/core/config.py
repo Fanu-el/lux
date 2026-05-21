@@ -62,16 +62,20 @@ class Settings:
     )
     verification_code_length: int = int(os.getenv("VERIFICATION_CODE_LENGTH", "6"))
     google_api_key: str | None = os.getenv("GOOGLE_API_KEY")
-    default_gemini_model: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
-    gemini_allowed_models: list[str] = [
+    openai_api_key: str | None = os.getenv("OPENAI_API_KEY")
+    anthropic_api_key: str | None = os.getenv("ANTHROPIC_API_KEY")
+    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+    # Model strings use "provider/model-name" format, e.g.:
+    #   gemini/gemini-2.5-flash  |  openai/gpt-4o  |  anthropic/claude-3-5-sonnet-20241022
+    default_llm_model: str = os.getenv("DEFAULT_LLM_MODEL", "gemini/gemini-2.5-flash")
+    llm_allowed_models: list[str] = [
         model.strip()
         for model in os.getenv(
-            "GEMINI_ALLOWED_MODELS",
-            "gemini-2.5-flash,gemini-2.5-pro",
+            "LLM_ALLOWED_MODELS",
+            "gemini/gemini-2.5-flash,gemini/gemini-2.5-pro",
         ).split(",")
         if model.strip()
     ]
-    gemini_temperature: float = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
     chat_context_message_limit: int = int(os.getenv("CHAT_CONTEXT_MESSAGE_LIMIT", "20"))
     chat_system_prompt: str = os.getenv(
         "CHAT_SYSTEM_PROMPT",
