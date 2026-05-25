@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
 from app.models.role import RoleKey
 from app.models.user import User, UserStatus
 from app.models.verification_code import VerificationCodePurpose
@@ -12,6 +12,7 @@ from app.schemas.auth import (
     EmailRequest,
     EmailVerificationRequest,
     LoginRequest,
+    RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -196,6 +197,33 @@ def reset_password(db: Session, payload: ResetPasswordRequest) -> AuthMessageRes
     return AuthMessageResponse(message="Password reset successfully.")
 
 
+def refresh_access_token(db: Session, payload: RefreshRequest) -> TokenResponse:
+    token_data = decode_refresh_token(payload.refresh_token)
+    user_id = token_data.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+    user = db.get(User, user_id)
+    if not user or user.deleted_at is not None or user.status == UserStatus.DELETED:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User is not available",
+        )
+    if user.status == UserStatus.BANNED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is banned",
+        )
+    if user.status == UserStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification is required",
+        )
+    return _token_response(user)
+
+
 def soft_delete_user(db: Session, user: User) -> User:
     user.status = UserStatus.DELETED
     user.deleted_at = datetime.now(timezone.utc)
@@ -207,6 +235,7 @@ def soft_delete_user(db: Session, user: User) -> User:
 def _token_response(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(subject=user.id),
+        refresh_token=create_refresh_token(subject=user.id),
         user=user,
     )
 
