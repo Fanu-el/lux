@@ -9,6 +9,7 @@ from app.schemas.auth import (
     EmailRequest,
     EmailVerificationRequest,
     LoginRequest,
+    RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -18,6 +19,7 @@ from app.schemas.user import UserPublic
 from app.services.auth_service import (
     authenticate_user,
     forgot_password,
+    refresh_access_token,
     register_super_admin,
     register_user,
     resend_verification_code,
@@ -80,3 +82,8 @@ def reset(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=ApiResponse[UserPublic])
 def me(current_user: User = Depends(requires_auth)):
     return success_response(current_user)
+
+
+@router.post("/refresh", response_model=ApiResponse[TokenResponse])
+def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
+    return success_response(refresh_access_token(db, payload))

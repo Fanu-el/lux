@@ -46,11 +46,40 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     expire_at = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
-    payload = {"sub": subject, "exp": int(expire_at.timestamp())}
+    payload = {"sub": subject, "exp": int(expire_at.timestamp()), "type": "access"}
+    return _encode_jwt(payload)
+
+
+def create_refresh_token(subject: str, expires_delta: timedelta | None = None) -> str:
+    expire_at = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(days=settings.refresh_token_expire_days)
+    )
+    payload = {"sub": subject, "exp": int(expire_at.timestamp()), "type": "refresh"}
     return _encode_jwt(payload)
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
+    payload = _decode_and_verify(token)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload
+
+
+def decode_refresh_token(token: str) -> dict[str, Any]:
+    payload = _decode_and_verify(token)
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+    return payload
+
+
+def _decode_and_verify(token: str) -> dict[str, Any]:
     try:
         header, payload, signature = token.split(".")
         expected_signature = _sign(f"{header}.{payload}")

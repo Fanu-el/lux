@@ -34,6 +34,9 @@ class Settings:
     access_token_expire_minutes: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
     )
+    refresh_token_expire_days: int = int(
+        os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7")
+    )
     super_admin_name: str | None = os.getenv("SUPER_ADMIN_NAME")
     super_admin_email: str | None = os.getenv("SUPER_ADMIN_EMAIL")
     super_admin_password: str | None = os.getenv("SUPER_ADMIN_PASSWORD")
