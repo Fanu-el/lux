@@ -26,6 +26,8 @@ async def send_email(
     try:
         if settings.mail_provider == "resend":
             await _send_with_resend(to_email=to_email, subject=subject, body=body)
+        elif settings.mail_provider == "gmail":
+            await _send_with_gmail_api(to_email=to_email, subject=subject, body=body)
         else:
             await _send_with_fastapi_mail(to_email=to_email, subject=subject, body=body)
     except Exception as exc:
@@ -69,6 +71,55 @@ async def _send_with_resend(to_email: str, subject: str, body: str) -> None:
         "html": body,
     }
     await asyncio.to_thread(resend.Emails.send, params)
+
+
+async def _send_with_gmail_api(to_email: str, subject: str, body: str) -> None:
+    if (
+        not settings.gmail_client_id
+        or not settings.gmail_client_secret
+        or not settings.gmail_refresh_token
+    ):
+        raise RuntimeError(
+            "Gmail API settings are incomplete (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)"
+        )
+    if not settings.mail_from:
+        raise RuntimeError("MAIL_FROM is not configured")
+
+    import base64
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+
+    creds = Credentials(
+        token=None,
+        refresh_token=settings.gmail_refresh_token,
+        client_id=settings.gmail_client_id,
+        client_secret=settings.gmail_client_secret,
+        token_uri="https://oauth2.googleapis.com/token",
+        scopes=["https://www.googleapis.com/auth/gmail.send"],
+    )
+    creds.refresh(Request())
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = (
+        f"{settings.mail_from_name} <{settings.mail_from}>"
+        if settings.mail_from_name
+        else settings.mail_from
+    )
+    message["To"] = to_email
+    message.attach(MIMEText(body, "html"))
+
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    service = build("gmail", "v1", credentials=creds)
+    await asyncio.to_thread(
+        lambda: (
+            service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        )
+    )
 
 
 async def _send_with_fastapi_mail(to_email: str, subject: str, body: str) -> None:

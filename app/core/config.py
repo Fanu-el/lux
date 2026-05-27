@@ -52,9 +52,13 @@ class Settings:
     mail_validate_certs: bool = (
         os.getenv("MAIL_VALIDATE_CERTS", "true").lower() == "true"
     )
-    # "smtp" uses fastapi-mail/SMTP; "resend" uses the Resend HTTP API (works on Render)
+    # "smtp" uses fastapi-mail/SMTP; "resend" uses the Resend HTTP API; "gmail" uses the Gmail HTTP API
+    # Both "resend" and "gmail" work on Render (no SMTP ports needed)
     mail_provider: str = os.getenv("MAIL_PROVIDER", "smtp")
     resend_api_key: str | None = os.getenv("RESEND_API_KEY")
+    gmail_client_id: str | None = os.getenv("GMAIL_CLIENT_ID")
+    gmail_client_secret: str | None = os.getenv("GMAIL_CLIENT_SECRET")
+    gmail_refresh_token: str | None = os.getenv("GMAIL_REFRESH_TOKEN")
     verification_code_expires_in_minute: int = int(
         os.getenv("VERIFICATION_CODE_EXPIRES_IN_MINUTE", "10")
     )
