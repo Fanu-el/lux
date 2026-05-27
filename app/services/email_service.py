@@ -1,8 +1,13 @@
+import asyncio
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.email import Email, EmailStatus
+
+logger = logging.getLogger(__name__)
 
 
 async def send_email(
@@ -19,8 +24,17 @@ async def send_email(
     )
 
     try:
-        await _send_with_fastapi_mail(to_email=to_email, subject=subject, body=body)
+        if settings.mail_provider == "resend":
+            await _send_with_resend(to_email=to_email, subject=subject, body=body)
+        else:
+            await _send_with_fastapi_mail(to_email=to_email, subject=subject, body=body)
     except Exception as exc:
+        logger.error(
+            "Failed to send email to %s via %s: %s",
+            to_email,
+            settings.mail_provider,
+            exc,
+        )
         email_log.status = EmailStatus.FAILED
         email_log.error_message = str(exc)
         db.add(email_log)
@@ -34,8 +48,35 @@ async def send_email(
     db.commit()
 
 
+async def _send_with_resend(to_email: str, subject: str, body: str) -> None:
+    if not settings.resend_api_key:
+        raise RuntimeError("RESEND_API_KEY is not configured")
+    if not settings.mail_from:
+        raise RuntimeError("MAIL_FROM is not configured")
+
+    import resend
+
+    resend.api_key = settings.resend_api_key
+    from_address = (
+        f"{settings.mail_from_name} <{settings.mail_from}>"
+        if settings.mail_from_name
+        else settings.mail_from
+    )
+    params: resend.Emails.SendParams = {
+        "from": from_address,
+        "to": [to_email],
+        "subject": subject,
+        "html": body,
+    }
+    await asyncio.to_thread(resend.Emails.send, params)
+
+
 async def _send_with_fastapi_mail(to_email: str, subject: str, body: str) -> None:
-    if not settings.mail_username or not settings.mail_password or not settings.mail_from:
+    if (
+        not settings.mail_username
+        or not settings.mail_password
+        or not settings.mail_from
+    ):
         raise RuntimeError("Email settings are incomplete")
 
     from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType

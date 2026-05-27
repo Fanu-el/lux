@@ -34,9 +34,7 @@ class Settings:
     access_token_expire_minutes: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
     )
-    refresh_token_expire_days: int = int(
-        os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7")
-    )
+    refresh_token_expire_days: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     super_admin_name: str | None = os.getenv("SUPER_ADMIN_NAME")
     super_admin_email: str | None = os.getenv("SUPER_ADMIN_EMAIL")
     super_admin_password: str | None = os.getenv("SUPER_ADMIN_PASSWORD")
@@ -54,6 +52,9 @@ class Settings:
     mail_validate_certs: bool = (
         os.getenv("MAIL_VALIDATE_CERTS", "true").lower() == "true"
     )
+    # "smtp" uses fastapi-mail/SMTP; "resend" uses the Resend HTTP API (works on Render)
+    mail_provider: str = os.getenv("MAIL_PROVIDER", "smtp")
+    resend_api_key: str | None = os.getenv("RESEND_API_KEY")
     verification_code_expires_in_minute: int = int(
         os.getenv("VERIFICATION_CODE_EXPIRES_IN_MINUTE", "10")
     )
