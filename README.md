@@ -1,1 +1,1 @@
-Lux - A Generative AI Chatbox with FastApi and LangChain
+Lux - A Generative AI Chatbot with FastApi and LangChain
